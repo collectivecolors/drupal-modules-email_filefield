@@ -1,0 +1,8 @@
+; $Id$
+name = FileField Email Formatter
+description = Adds a formatter option for filefields that allows for emailing of files attached to content.
+dependencies[] = filefield
+dependencies[] = thickbox
+package = CCK
+core = 6.x
+php = 5.0
