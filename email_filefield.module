@@ -3,11 +3,18 @@
 
 /**
  * @file
- * Email FileField: Defines a CCK file field formatter that allows for the 
+ * 
+ * Email FileField [  email_filefield  ]
+ * 
+ * Defines a CCK file field formatter that allows for the 
  * emailing of files attached to content.
  * 
- * @TODO Make this module work for multiple files.  Right now only a single 
+ * @todo Make this module work for multiple files.  Right now only a single 
  * file is supported.
+ * 
+ * @todo Eliminate the dependency on the thickbox module.  The thickbox module
+ * can be themed out of the picture but it would be best if the module did not
+ * need it installed to operate.
  */
 
 //------------------------------------------------------------------------------
@@ -31,7 +38,7 @@ function email_filefield_theme() {
       'arguments' => array('file' => NULL, 'field' => NULL),
     ),
     'email_filefield_email_form' => array(
-      'arguments' => array('file' => NULL, 'field' => NULL),
+      'arguments' => array('file' => NULL, 'form_content' => NULL),
     ),
  );
 }
@@ -89,13 +96,19 @@ function theme_email_filefield_formatter_email_form($element) {
  */
 function theme_email_filefield_display($file, $field) {
 	
+	// Get form being used to get information.
+	// TODO: Integrate with webforms, so you can have modifiable forms.
+	//       ** Requires configurable height and width settings on popup **
+	$form_input = email_filefield_get_email_form($file, $field);
+	
+	// Format information for display.
 	$download_link = theme('filefield_file', $file);
 	
 	// Theme 'email this file' link.
 	$email_link = theme('email_filefield_email_link', $file, $field);
 	
 	// Theme 'email form' that is handled by the thickbox display.
-	$email_form = theme('email_filefield_email_form', $file, $field);
+	$email_form = theme('email_filefield_email_form', $file, $form_input);
 	
 	// Email form should be hidden initially. 
 	return $download_link . $email_link . $email_form;
@@ -104,18 +117,65 @@ function theme_email_filefield_display($file, $field) {
 //------------------------------------------------------------------------------
 
 function theme_email_filefield_email_link($file, $field) {
-	return ''; // TODO
+	
+	// krumo($file);
+	// krumo($field);
+	
+	$fid    = $file['fid'];
+	
+	$width  = 300; // TODO: Make this a variable_get(...) configuration.
+	$height = 350; // TODO: Make this a variable_get(...) configuration.
+	
+	$output = "<div id='email-link-$fid-cont'> ( "
+	 . "<a href='#TB_inline?width=$width&height=$height&inlineId=email-form-$fid'"
+	 . " class='email-link thickbox'>" 
+	 . t('Email this file')
+	 . "</a>"
+	 . " ) </div>";
+	         
+	// krumo($output);
+	         
+	return $output;
 }
 
 //------------------------------------------------------------------------------
 
-function theme_email_filefield_email_form($file, $field) {
-  return ''; // TODO
+function theme_email_filefield_email_form($file, $form_input) {
+  
+	$fid = $file['fid'];
+	
+	$output = "<div id='email-form-$fid' class='email-form'"
+	 . " style='display: none'>"
+	 . $form_input
+	 . "</div>";  
+  
+  return $output;
 }
 
 //------------------------------------------------------------------------------
 // Form functions
 //------------------------------------------------------------------------------
+
+/**
+ * Return the HTMLified send mail form ready for theme injection.
+ */
+function email_filefield_get_email_form($file, $field) {
+	
+	$webform_nid = 2; // TODO: Make this selectable in the field settings.
+	$webform = node_load($webform_nid);
+	
+	$form = drupal_get_form(
+    'webform_client_form_'. $webform->nid, 
+    $webform, 
+    array(), TRUE, FALSE
+  );
+  
+  $output = theme('webform_view', $webform, FALSE, TRUE, $form, TRUE);
+	
+	return $output;
+}
+
+
 
 
 
