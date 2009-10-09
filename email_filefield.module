@@ -1,0 +1,118 @@
+<?php 
+// $Id$
+
+/**
+ * @file
+ * Email FileField: Defines a CCK file field formatter that allows for the 
+ * emailing of files attached to content.
+ * 
+ * @TODO Make this module work for multiple files.  Right now only a single 
+ * file is supported.
+ */
+
+//------------------------------------------------------------------------------
+// Drupal hooks
+//------------------------------------------------------------------------------
+
+/**
+ * Implementation of hook_theme().
+ * 
+ * @see http://api.drupal.org/api/function/hook_theme/6
+ */
+function email_filefield_theme() {
+  return array(
+    'email_filefield_formatter_email_form' => array(
+      'arguments' => array('element' => NULL),
+    ),
+    'email_filefield_display' => array(
+      'arguments' => array('file' => NULL, 'field' => NULL),
+    ),
+    'email_filefield_email_link' => array(
+      'arguments' => array('file' => NULL, 'field' => NULL),
+    ),
+    'email_filefield_email_form' => array(
+      'arguments' => array('file' => NULL, 'field' => NULL),
+    ),
+ );
+}
+
+//------------------------------------------------------------------------------
+// CCK hooks
+//------------------------------------------------------------------------------
+
+/**
+ * Implementation of hook_field_formatter_info().
+ */
+function email_filefield_field_formatter_info() {
+  return array(
+    'email_form' => array(
+      'label' => t('Link with popup email form'),
+      'field types' => array('filefield'),
+      'multiple values' => CONTENT_HANDLE_CORE,
+      'description' => t(
+        'Displays a link that, when clicked, pops up a email this file form on'
+        . ' the page via thickbox.'
+      ),  
+    ),  
+  );
+}
+
+//------------------------------------------------------------------------------
+// Theme functions
+//------------------------------------------------------------------------------
+
+/**
+ * Theme function for the 'email_form' filefield formatter.
+ */
+function theme_email_filefield_formatter_email_form($element) {
+  
+	$file  = $element['#item'];
+  $field = content_fields($element['#field_name']);
+
+  // Make sure user has permission to view this file.
+  if (filefield_view_access($field['field_name']) 
+      && filefield_file_listed($file, $field)) {
+      
+    return theme('email_filefield_display', $file, $field);
+  }
+  return ''; // These users can't see anything. 
+}
+
+//------------------------------------------------------------------------------
+
+/**
+ * Theme function that returns the email link and form.
+ */
+function theme_email_filefield_display($file, $field) {
+	
+	$download_link = theme('filefield_file', $file);
+	
+	// Theme 'email this file' link.
+	$email_link = theme('email_filefield_email_link', $file, $field);
+	
+	// Theme 'email form' that is handled by the thickbox display.
+	$email_form = theme('email_filefield_email_form', $file, $field);
+	
+	// Email form should be hidden initially. 
+	return $download_link . $email_link . $email_form;
+}
+
+//------------------------------------------------------------------------------
+
+function theme_email_filefield_email_link($file, $field) {
+	return ''; // TODO
+}
+
+//------------------------------------------------------------------------------
+
+function theme_email_filefield_email_form($file, $field) {
+  return ''; // TODO
+}
+
+//------------------------------------------------------------------------------
+// Form functions
+//------------------------------------------------------------------------------
+
+
+
+//------------------------------------------------------------------------------
