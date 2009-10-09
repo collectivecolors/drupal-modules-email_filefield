@@ -335,10 +335,17 @@ function email_filefield_webform_form($form_state, $webform, $file) {
 	// Add our special values.
 	$form['#filefield'] = $file;
 	
-	// Add our own submit handler.
-	$form['#submit'][] = 'email_filefield_webform_form_submit';
+	// Replace the default webform submit handler with our own submit handler.
+	$submit_handlers = array('email_filefield_webform_form_submit');
 	
-	// krumo($form);
+	// Make sure we don't remove other modules submit handlers for this webform.
+	foreach ($form['#submit'] as $handler) {
+	  if ($handler != 'webform_client_form_submit') { // Remove the webform submit
+	    $submit_handlers[] = $handler;  
+	  }
+	}
+	
+	$form['#submit'] = $submit_handlers;
 	
 	return $form;	
 }
@@ -349,13 +356,38 @@ function email_filefield_webform_form($form_state, $webform, $file) {
  * Submit handler for the send email form.
  */
 function email_filefield_webform_form_submit($form, &$form_state) {
-	
+  
 	$file = $form['#filefield'];
 	
-	// krumo($file);
+	// Gather email addresses to send file to.
+	$webform = node_load($form_state['values']['details']['nid']);
+	$emails  = array();
 	
-	// TODO: Send email to destination email with attached file and message.
-	
+  // Flatten trees within the submission.
+  $submitted_values = _webform_client_form_submit_flatten(
+    $webform, $form_state['values']['submitted']);
+		
+  foreach ($webform->webform['additional_emails'] as $cid => $value) {
+    if (is_array($submitted_values[$cid])) {
+      foreach ($submitted_values[$cid] as $submitted_value) {
+        if ($submitted_value) {
+          $emails[] = $submitted_value;
+        }
+      }      
+    }
+    else {
+      $emails[] = $submitted_values[$cid];
+    }
+    
+    $form_key = $webform->webform['components'][$cid]['form_key'];    
+    unset($form_state['values']['submitted'][$form_key]);    
+  }
+  
+  // TODO: Send our file as attachment to emails.
+  
+  
+  // Call the regular webform submit.
+  webform_client_form_submit($form, $form_state);
 }
 
 //------------------------------------------------------------------------------
