@@ -18,6 +18,13 @@
  */
 
 //------------------------------------------------------------------------------
+// Constants
+//------------------------------------------------------------------------------
+
+define('EMAIL_FILEFIELD_DEFAULT_WIDTH', 300);
+define('EMAIL_FILEFIELD_DEFAULT_HEIGHT', 350);
+
+//------------------------------------------------------------------------------
 // Drupal hooks
 //------------------------------------------------------------------------------
 
@@ -43,19 +50,33 @@ function email_filefield_theme() {
   );
 }
 
+//------------------------------------------------------------------------------
+
 /**
  * Implementation of hook_form_alter().
  *
  * @see http://api.drupal.org/api/function/hook_form_alter/6
  */
-/*function email_filefield_form_alter(&$form, $form_state, $form_id) {
-	
-	// We only care about webform submissions.
-	if (strpos($form_id, 'webform_client_form_') === 0) {
-		$webform = node_load($form['details']['nid']['#value']);
-		
-	}	
-}*/
+function email_filefield_form_alter(&$form, $form_state, $form_id) {
+ 
+  // We only filefield settings forms.
+  if ($form_id == 'content_field_edit_form') {
+    $field = $form['#field'];
+    
+    if ($field['type'] == 'filefield') {
+      
+      // Merge our form with the default filefield settings form.
+      $formatter_form = email_filefield_field_settings_form($field);
+      $form = array_merge($form, $formatter_form);
+      
+      // Make sure the submit button is diplayed after our formatter fieldset.
+      $form['submit']['#weight'] = 10;
+      
+      // Add our form processor.
+      $form['#submit'][] = 'email_filefield_field_settings_submit';
+    } 
+  }
+}
 
 //------------------------------------------------------------------------------
 // CCK hooks
@@ -117,28 +138,31 @@ function theme_email_filefield_display($file, $field) {
 	
 	// Format information for display.
 	$download_link = theme('filefield_file', $file);
+	$email_section = '';
 	
-	// Theme 'email this file' link.
-	$email_link = theme('email_filefield_email_link', $file, $field);
+	if ($form_input) {
+	  // Theme 'email this file' link.
+	  $email_section = theme('email_filefield_email_link', $file, $field);
 	
-	// Theme 'email form' that is handled by the thickbox display.
-	$email_form = theme('email_filefield_email_form', $file, $form_input);
-	
+	  // Theme 'email form' that is handled by the thickbox display.
+	  $email_section .= theme('email_filefield_email_form', $file, $form_input);
+	}
 	// Email form should be hidden initially. 
-	return $download_link . $email_link . $email_form;
+	return $download_link . $email_section;
 }
 
 //------------------------------------------------------------------------------
 
 function theme_email_filefield_email_link($file, $field) {
 	
-	// krumo($file);
-	// krumo($field);
+	$fid  = $file['fid'];
+	$name = $field['field_name'];
 	
-	$fid    = $file['fid'];
-	
-	$width  = 300; // TODO: Make this a variable_get(...) configuration.
-	$height = 350; // TODO: Make this a variable_get(...) configuration.
+	$width  = variable_get("email_filefield_form_width_$name", 
+	                       EMAIL_FILEFIELD_DEFAULT_WIDTH);
+	                       
+	$height = variable_get("email_filefield_form_height_$name", 
+	                       EMAIL_FILEFIELD_DEFAULT_HEIGHT);
 	
 	$output = "<div id='email-link-$fid-cont'> ( "
 	 . "<a href='#TB_inline?width=$width&height=$height&inlineId=email-form-$fid'"
@@ -146,8 +170,6 @@ function theme_email_filefield_email_link($file, $field) {
 	 . t('Email this file')
 	 . "</a>"
 	 . " ) </div>";
-	         
-	// krumo($output);
 	         
 	return $output;
 }
@@ -171,18 +193,128 @@ function theme_email_filefield_email_form($file, $form_input) {
 //------------------------------------------------------------------------------
 
 /**
+ * Implementation of hook_field_settings_alter().
+ */
+function email_filefield_field_settings_form($field) {
+  
+  $name = $field['field_name'];
+  
+  $form['email_formatter'] = array(
+  	'#type' => 'fieldset',
+  	'#title' => t('Email formatter settings'),
+  	'#weight' => 5,
+  	'#collapsible' => FALSE,
+  	'#collapsed' => FALSE,
+    '#description' => t(
+    	'These settings are only useful if you have selected to use the email'
+    	. ' form display formatter for either teaser or full page views.'
+    )
+  );
+  
+  // TODO: Implement an alternative to webform if it doesn't exist.
+  /*$form['email_formatter']['use_webform'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Use an existing webform for this form input.'),
+    '#default_value' => variable_get("email_filefield_use_webform_$name", 0),
+  );*/
+  
+  $webforms = email_filefield_get_webform_options();
+  $form['email_formatter']['email_webform'] = array(
+  	'#type' => 'select',
+  	'#title' => t('Select the webform to be used in rendering the email form'),
+  	'#default_value' => variable_get("email_filefield_email_webform_$name", 
+                                     key($webforms)),
+  	'#options' => $webforms,
+  );
+  
+  // TODO:  Implement an alternative to thickbox if it doesn't exist.
+  /*$form['email_formatter']['use_thickbox'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Use thickbox to render this form in a popup display.'),
+    '#default_value' => variable_get("email_filefield_use_thickbox_$name", 0),
+  );*/
+  
+  $form['email_formatter']['form_width'] = array(
+  	'#type' => 'textfield',
+  	'#title' => t('Thickbox form width'),
+  	'#default_value' => variable_get("email_filefield_form_width_$name", 
+                                     EMAIL_FILEFIELD_DEFAULT_WIDTH),
+  	'#size' => 4,
+  	'#maxlength' => 4,
+  	'#element_validate' => array('email_filefield_numeric_validator'),
+  );
+  $form['email_formatter']['form_height'] = array(
+  	'#type' => 'textfield',
+  	'#title' => t('Thickbox form height'),
+  	'#default_value' => variable_get("email_filefield_form_height_$name", 
+                                     EMAIL_FILEFIELD_DEFAULT_HEIGHT),
+  	'#size' => 4,
+  	'#maxlength' => 4,
+    '#element_validate' => array('email_filefield_numeric_validator'),
+  );
+  
+  return $form;  
+}
+
+//------------------------------------------------------------------------------
+
+function email_filefield_numeric_validator($element, &$form_state) {
+  
+  // Validate the numeric settings.
+  $number     = $element['#value'];
+  $field_name = $element['#title'];
+  
+  if (empty($number)) {
+    form_error($element, 
+      t('@field_name field is required.', 
+        array('@field_name' => $field_name)
+      )
+    );  
+  }
+  
+  if (!is_numeric($number) || $number <= 0) {
+    form_error($element, 
+      t('@field_name field must be a positive integer.',
+        array('@field_name' => $field_name)
+      )
+    );
+  }
+}
+
+//------------------------------------------------------------------------------
+
+function email_filefield_field_settings_submit($form, &$form_values) {
+  
+  $values = $form_values['values'];
+  $name   = $values['field_name'];
+  
+  variable_set("email_filefield_use_webform_$name", $values['use_webform']);
+  variable_set("email_filefield_email_webform_$name", $values['email_webform']);
+  
+  variable_set("email_filefield_use_thickbox_$name", $values['use_thickbox']);
+  variable_set("email_filefield_form_width_$name", $values['form_width']);
+  variable_set("email_filefield_form_height_$name", $values['form_height']);  
+}
+
+//------------------------------------------------------------------------------
+
+/**
  * Return the HTMLified send mail form ready for theme injection.
  */
 function email_filefield_get_email_form($file, $field) {
 	
-	$webform_nid = 2; // TODO: Make this selectable in the field settings.
-	$webform = node_load($webform_nid);
+  $name        = $field['field_name'];
+	$webform_nid = variable_get("email_filefield_email_webform_$name", NULL);
 	
-	$form = drupal_get_form('email_filefield_webform_form', $webform, $file);
-  
-  $output = theme('webform_view', $webform, FALSE, TRUE, $form, TRUE);
-	
-	return $output;
+	if ($webform_nid) {
+	  $webform = node_load($webform_nid);
+	  
+	  if ($webform) {
+	    $form = drupal_get_form('email_filefield_webform_form', $webform, $file);
+      return theme('webform_view', $webform, FALSE, TRUE, $form, TRUE);
+	  }
+	}
+	return '';
 }
 
 //------------------------------------------------------------------------------
@@ -206,7 +338,7 @@ function email_filefield_webform_form($form_state, $webform, $file) {
 	// Add our own submit handler.
 	$form['#submit'][] = 'email_filefield_webform_form_submit';
 	
-	krumo($form);
+	// krumo($form);
 	
 	return $form;	
 }
@@ -220,10 +352,34 @@ function email_filefield_webform_form_submit($form, &$form_state) {
 	
 	$file = $form['#filefield'];
 	
-	krumo($file);
+	// krumo($file);
 	
 	// TODO: Send email to destination email with attached file and message.
 	
+}
+
+//------------------------------------------------------------------------------
+// Internal utilities
+//------------------------------------------------------------------------------
+
+/**
+ * Return all available webforms for use in email form selection.
+ */
+function email_filefield_get_webform_options() {
+  
+  $options = array();
+  
+  $results = db_query(
+  	'SELECT * FROM {node} n'
+  	. ' WHERE n.type = "webform"'
+  	. ' ORDER BY n.title'
+  );
+  
+  while($webform = db_fetch_object($results)) {
+    $options[$webform->nid] = check_plain($webform->title);  
+  }
+  
+  return $options;
 }
 
 //------------------------------------------------------------------------------

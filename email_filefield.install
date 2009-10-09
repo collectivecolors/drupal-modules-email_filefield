@@ -1,0 +1,13 @@
+<?php
+
+//------------------------------------------------------------------------------
+// Drupal hooks
+//------------------------------------------------------------------------------
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function email_filefield_uninstall() {
+  // Remove all old variables for this module.
+  db_query('DELETE FROM {variable} v WHERE v.name LIKE "email_filefield_%"');  
+}
