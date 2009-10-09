@@ -2,6 +2,7 @@
 name = FileField Email Formatter
 description = Adds a formatter option for filefields that allows for emailing of files attached to content.
 dependencies[] = filefield
+dependencies[] = webform
 dependencies[] = thickbox
 package = CCK
 core = 6.x
