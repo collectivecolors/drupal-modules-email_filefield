@@ -40,8 +40,22 @@ function email_filefield_theme() {
     'email_filefield_email_form' => array(
       'arguments' => array('file' => NULL, 'form_content' => NULL),
     ),
- );
+  );
 }
+
+/**
+ * Implementation of hook_form_alter().
+ *
+ * @see http://api.drupal.org/api/function/hook_form_alter/6
+ */
+/*function email_filefield_form_alter(&$form, $form_state, $form_id) {
+	
+	// We only care about webform submissions.
+	if (strpos($form_id, 'webform_client_form_') === 0) {
+		$webform = node_load($form['details']['nid']['#value']);
+		
+	}	
+}*/
 
 //------------------------------------------------------------------------------
 // CCK hooks
@@ -164,19 +178,52 @@ function email_filefield_get_email_form($file, $field) {
 	$webform_nid = 2; // TODO: Make this selectable in the field settings.
 	$webform = node_load($webform_nid);
 	
-	$form = drupal_get_form(
-    'webform_client_form_'. $webform->nid, 
-    $webform, 
-    array(), TRUE, FALSE
-  );
+	$form = drupal_get_form('email_filefield_webform_form', $webform, $file);
   
   $output = theme('webform_view', $webform, FALSE, TRUE, $form, TRUE);
 	
 	return $output;
 }
 
+//------------------------------------------------------------------------------
 
+/**
+ * Return the actual send email form.
+ * 
+ * This is an altered webform.  Webform form handlers should still be applied.
+ */
+function email_filefield_webform_form($form_state, $webform, $file) {
+	
+	// Get the raw webform.
+	$form = webform_client_form($form_state, $webform, array(), TRUE, FALSE);
+	
+	// Eliminate the typical webform redirection.
+	unset($form['#action']);
+	
+	// Add our special values.
+	$form['#filefield'] = $file;
+	
+	// Add our own submit handler.
+	$form['#submit'][] = 'email_filefield_webform_form_submit';
+	
+	krumo($form);
+	
+	return $form;	
+}
 
+//------------------------------------------------------------------------------
 
+/**
+ * Submit handler for the send email form.
+ */
+function email_filefield_webform_form_submit($form, &$form_state) {
+	
+	$file = $form['#filefield'];
+	
+	krumo($file);
+	
+	// TODO: Send email to destination email with attached file and message.
+	
+}
 
 //------------------------------------------------------------------------------
