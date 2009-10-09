@@ -69,6 +69,10 @@ function theme_email_filefield_formatter_email_form($element) {
 	$file  = $element['#item'];
   $field = content_fields($element['#field_name']);
 
+  // We need to make sure the filefield formatter library is loaded to use
+  // the functions filefield_file_listed().
+  module_load_include('inc', 'filefield', 'filefield_formatter');
+  
   // Make sure user has permission to view this file.
   if (filefield_view_access($field['field_name']) 
       && filefield_file_listed($file, $field)) {
