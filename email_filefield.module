@@ -35,17 +35,32 @@ define('EMAIL_FILEFIELD_DEFAULT_HEIGHT', 350);
  */
 function email_filefield_theme() {
   return array(
+    // Filefield email_form formatter display.
     'email_filefield_formatter_email_form' => array(
       'arguments' => array('element' => NULL),
     ),
     'email_filefield_display' => array(
       'arguments' => array('file' => NULL, 'field' => NULL),
     ),
-    'email_filefield_email_link' => array(
+    'email_filefield_display_link' => array(
       'arguments' => array('file' => NULL, 'field' => NULL),
     ),
-    'email_filefield_email_form' => array(
+    'email_filefield_display_form' => array(
       'arguments' => array('file' => NULL, 'form_content' => NULL),
+    ),
+    
+    // Sent email format.
+    'email_filefield_mail_subject' => array(
+      'arguments' => array('node' => NULL, 'file' => NULL, 'webform' => NULL),
+    ),
+    'email_filefield_mail_message' => array(
+      'arguments' => array('node' => NULL, 'file' => NULL, 'webform' => NULL),
+    ),
+    'email_filefield_mail_message_text' => array(
+      'arguments' => array('node' => NULL, 'file' => NULL, 'webform' => NULL),
+    ),
+    'email_filefield_mail_attachment' => array(
+      'arguments' => array('file' => NULL, 'filedata' => NULL),
     ),
   );
 }
@@ -86,7 +101,7 @@ function email_filefield_form_alter(&$form, $form_state, $form_id) {
  * @see http://api.drupal.org/api/function/hook_mail_alter/6
  */
 function email_filefield_mail_alter(&$message) {
-	global $email_filefield_file;
+	global $email_filefield_file, $email_filefield_webform;
 	
 	if ($message['id'] != 'webform_submission' 
 	    || !$email_filefield_file) {
@@ -94,10 +109,10 @@ function email_filefield_mail_alter(&$message) {
 	  return;
 	}
 	
-	// TODO: Format the email for sending.
-	
-	// krumo($message);
-	// krumo($email_filefield_file);
+	// Format the email for sending.
+	email_filefield_format_mail($message, 
+	                            $email_filefield_file, 
+	                            $email_filefield_webform);
 }
 
 //------------------------------------------------------------------------------
@@ -164,10 +179,10 @@ function theme_email_filefield_display($file, $field) {
 	
 	if ($form_input) {
 	  // Theme 'email this file' link.
-	  $email_section = theme('email_filefield_email_link', $file, $field);
+	  $email_section = theme('email_filefield_display_link', $file, $field);
 	
 	  // Theme 'email form' that is handled by the thickbox display.
-	  $email_section .= theme('email_filefield_email_form', $file, $form_input);
+	  $email_section .= theme('email_filefield_display_form', $file, $form_input);
 	}
 	// Email form should be hidden initially. 
 	return $download_link . $email_section;
@@ -175,7 +190,7 @@ function theme_email_filefield_display($file, $field) {
 
 //------------------------------------------------------------------------------
 
-function theme_email_filefield_email_link($file, $field) {
+function theme_email_filefield_display_link($file, $field) {
 	
 	$fid  = $file['fid'];
 	$name = $field['field_name'];
@@ -198,7 +213,7 @@ function theme_email_filefield_email_link($file, $field) {
 
 //------------------------------------------------------------------------------
 
-function theme_email_filefield_email_form($file, $form_input) {
+function theme_email_filefield_display_form($file, $form_input) {
   
 	$fid = $file['fid'];
 	
@@ -208,6 +223,48 @@ function theme_email_filefield_email_form($file, $form_input) {
 	 . "</div>";  
   
   return $output;
+}
+
+//------------------------------------------------------------------------------
+
+function theme_email_filefield_mail_subject($node, $file, $webform = NULL) {
+  
+  return t( 'File sent from @site : !file',
+    array(
+      '@site' => variable_get('site_name', $_SERVER["HTTP_HOST"]),
+      '!file' => $file['filename'],     
+    )
+  );  
+}
+
+//------------------------------------------------------------------------------
+
+function theme_email_filefield_mail_message($node, $file, $webform = NULL) {
+
+	return "Content-Type: text/plain; charset=UTF-8; format=flowed;"."\n\n"
+    . theme('email_filefield_mail_message_text', $node, $file, $webform)
+    . "\n\n";
+}
+
+//------------------------------------------------------------------------------
+
+function theme_email_filefield_mail_message_text($node, $file, 
+                                                 $webform = NULL) {
+	// TODO: Add some useful information here.
+  return 'Webform message text here!';
+}
+
+//------------------------------------------------------------------------------
+
+function theme_email_filefield_mail_attachment($file, $filedata) {
+  
+  $filename = $file['filename'];
+  $filemime = $file['filemime'];
+  
+  return "Content-Type:$filemime; name='$filename'\n"
+    . "Content-Disposition: attachment; filename='$filename'\n"
+    . "Content-Transfer-Encoding: base64\n\n"
+    . chunk_split(base64_encode($filedata));  
 }
 
 //------------------------------------------------------------------------------
@@ -356,6 +413,7 @@ function email_filefield_webform_form($form_state, $webform, $file) {
 	
 	// Add our special values.
 	$form['#filefield'] = $file;
+	$form['#webform']   = $webform;
 	
 	// Replace the default webform submit handler with our own submit handler.
 	$submit_handlers = array('email_filefield_webform_form_submit');
@@ -378,10 +436,11 @@ function email_filefield_webform_form($form_state, $webform, $file) {
  * Submit handler for the send email form.
  */
 function email_filefield_webform_form_submit($form, &$form_state) {
-	global $email_filefield_file;
+	global $email_filefield_file, $email_filefield_webform;
   
-	// Set a temporary variable that references the file being sent.
-	$email_filefield_file = $form['#filefield'];
+	// Set a temporary variables that reference variables needed for the email.
+	$email_filefield_file    = $form['#filefield'];
+	$email_filefield_webform = $form['#webform'];
   
   // Call the regular webform submit.
   webform_client_form_submit($form, $form_state);
@@ -390,6 +449,33 @@ function email_filefield_webform_form_submit($form, &$form_state) {
 //------------------------------------------------------------------------------
 // Mail functions
 //------------------------------------------------------------------------------
+
+function email_filefield_format_mail(&$message, $file, $webform = NULL) {
+	
+	$node     = node_load($file['nid']);
+	$trenner  = md5(uniqid(time()));
+		
+	// Change header.
+	$message['headers']['MIME-Version'] = '1.0';
+  $message['headers']['Content-Type'] = "multipart/mixed; boundary=$trenner";
+  	
+	// Change subject.
+	$message['subject'] = theme('email_filefield_mail_subject', 
+	                            $node, $file, $webform);	
+	// Change message.
+	$message['body'] = "\n--$trenner\n"
+	 . theme('email_filefield_mail_message', $node, $file, $webform)
+	 . "\n\n";	
+	
+	// Attach file. ( not themeable!! )
+	$filedata = file_get_contents($file['filepath']);
+	
+	$message['body'] .= "\n--$trenner\n"
+	  . theme('email_filefield_mail_attachment', $file, $filedata);
+
+	$message['body'] .= "--$trenner--";
+	// End of line.
+}
 
 //------------------------------------------------------------------------------
 // Internal utilities
