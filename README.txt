@@ -66,14 +66,16 @@
 --------------------------------------------------------------------------------
  TO INSTALL VIA GIT
 --------------------------------------------------------------------------------
+ START BY:
 
- [1]$ cd $TOP_LEVEL_SITE_DIRECTORY  # Site must not be a Git repo!
+ [1]$ cd $TOP_LEVEL_SITE_DIRECTORY
  
  -------------------------------------------
 |  To clone this module into a Drupal site  |
  -------------------------------------------
+  THEN DO THIS:
  
- # ONLY DO THIS IF YOUR DRUPAL PROJECT IS NOT A GIT REPOSITORY!!!
+   # Only if your Drupal project << IS NOT >> a GIT REPOSITORY!!!
  
  [2]$ git clone git://github.com/collectivecolors/drupal-modules-email_filefield.git 
                 sites/all/modules/email_filefield
@@ -81,8 +83,9 @@
  --------------------------------------------
 |  To import this module as a Git submodule  |
  --------------------------------------------
- 
- # ONLY DO THIS IF YOUR DRUPAL PROJECT IS A GIT REPOSITORY!!!
+  OR DO THIS:
+  
+   # Only if your Drupal project << IS >> a GIT REPOSITORY!!!
               
  [2]$ git submodule add git://github.com/collectivecolors/drupal-modules-email_filefield.git
                         sites/all/modules/email_filefield
@@ -90,10 +93,15 @@
  [2.1]$ git commit -m "Adding email_filefield module to project."
 
 ---------------------------------------------
+ THEN CONTINUE WITH:
  
  [3]$ cd sites/all/modules/email_filefield
           
- [4]$ git checkout -b $MY_BRANCH $MODULE_TAG   # For example, $MODULE_TAG = v0.1  
+ [4]$ git checkout -b $MY_BRANCH $MODULE_TAG   
+    
+    # For example, $MY_BRANCH  = dev
+    # For example, $MODULE_TAG = DRUPAL-6--1-0-BETA1
+      
  [5]$ git status # Your ready for site configuration ( See below )
 
 
