@@ -79,6 +79,28 @@ function email_filefield_form_alter(&$form, $form_state, $form_id) {
 }
 
 //------------------------------------------------------------------------------
+
+/**
+ * Implementation of hook_mail_alter().
+ * 
+ * @see http://api.drupal.org/api/function/hook_mail_alter/6
+ */
+function email_filefield_mail_alter(&$message) {
+	global $email_filefield_file;
+	
+	if ($message['id'] != 'webform_submission' 
+	    || !$email_filefield_file) {
+		
+	  return;
+	}
+	
+	// TODO: Format the email for sending.
+	
+	// krumo($message);
+	// krumo($email_filefield_file);
+}
+
+//------------------------------------------------------------------------------
 // CCK hooks
 //------------------------------------------------------------------------------
 
@@ -356,39 +378,18 @@ function email_filefield_webform_form($form_state, $webform, $file) {
  * Submit handler for the send email form.
  */
 function email_filefield_webform_form_submit($form, &$form_state) {
+	global $email_filefield_file;
   
-	$file = $form['#filefield'];
-	
-	// Gather email addresses to send file to.
-	$webform = node_load($form_state['values']['details']['nid']);
-	$emails  = array();
-	
-  // Flatten trees within the submission.
-  $submitted_values = _webform_client_form_submit_flatten(
-    $webform, $form_state['values']['submitted']);
-		
-  foreach ($webform->webform['additional_emails'] as $cid => $value) {
-    if (is_array($submitted_values[$cid])) {
-      foreach ($submitted_values[$cid] as $submitted_value) {
-        if ($submitted_value) {
-          $emails[] = $submitted_value;
-        }
-      }      
-    }
-    else {
-      $emails[] = $submitted_values[$cid];
-    }
-    
-    $form_key = $webform->webform['components'][$cid]['form_key'];    
-    unset($form_state['values']['submitted'][$form_key]);    
-  }
-  
-  // TODO: Send our file as attachment to emails.
-  
+	// Set a temporary variable that references the file being sent.
+	$email_filefield_file = $form['#filefield'];
   
   // Call the regular webform submit.
   webform_client_form_submit($form, $form_state);
 }
+
+//------------------------------------------------------------------------------
+// Mail functions
+//------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
 // Internal utilities
