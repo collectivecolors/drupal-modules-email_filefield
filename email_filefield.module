@@ -8,13 +8,6 @@
  * 
  * Defines a CCK file field formatter that allows for the 
  * emailing of files attached to content.
- * 
- * @todo Make this module work for multiple files.  Right now only a single 
- * file is supported.
- * 
- * @todo Eliminate the dependency on the thickbox module.  The thickbox module
- * can be themed out of the picture but it would be best if the module did not
- * need it installed to operate.
  */
 
 //------------------------------------------------------------------------------

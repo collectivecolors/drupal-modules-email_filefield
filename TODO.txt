@@ -1,0 +1,29 @@
+// $Id$
+
+********************************************************************************
+********************************************************************************
+
+ --------
+|  TODO  |
+ --------
+
+1. Embed information about file submitted in the webform submission results.
+
+2. Eliminate the possibility that a user can receive two file emails if their
+email address is specified in multiple webform fields.  Need to look into
+exiting hook_mail_alter() without sending an actual email to the user, while
+still allowing for the continued execution of the script.
+
+3. Make this module work for multiple file filefields.  Right now only a single 
+file is supported.
+
+4. Eliminate the dependency on the thickbox module.  The thickbox module
+can be themed out of the picture but it would be best if the module did not
+need it installed to operate.  If thickbox is not installed and enabled for a
+field, it will default to a menu callback that redirects back to the current 
+page, when submitted.  Also needs a back button.
+
+5. Eliminate the dependency on the webform module.  The webform module is great
+and all but what if we don't want the overhead.  A simple email form needs to be
+generated that is used unless the webform module is installed and enabled for
+the field.
