@@ -54,10 +54,12 @@ function email_filefield_theme() {
       'arguments' => array('node' => NULL, 'file' => NULL, 'webform' => NULL),
     ),
     'email_filefield_mail_message' => array(
-      'arguments' => array('node' => NULL, 'file' => NULL, 'webform' => NULL),
+      'arguments' => array('node' => NULL, 'file' => NULL, 
+                           'values' => NULL, 'webform' => NULL),
     ),
     'email_filefield_mail_message_text' => array(
-      'arguments' => array('node' => NULL, 'file' => NULL, 'webform' => NULL),
+      'arguments' => array('node' => NULL, 'file' => NULL, 
+                           'values' => NULL, 'webform' => NULL),
     ),
     'email_filefield_mail_attachment' => array(
       'arguments' => array('file' => NULL, 'filedata' => NULL),
@@ -101,17 +103,20 @@ function email_filefield_form_alter(&$form, $form_state, $form_id) {
  * @see http://api.drupal.org/api/function/hook_mail_alter/6
  */
 function email_filefield_mail_alter(&$message) {
-	global $email_filefield_file, $email_filefield_webform;
+	global $email_filefield_file, $email_filefield_webform,
+	       $email_filefield_values;	
 	
 	if ($message['id'] != 'webform_submission' 
-	    || !$email_filefield_file) {
-		
+	    || !$email_filefield_file
+	    || !email_filefield_is_file_mail($message['to'],
+	                                     $email_filefield_webform)) {		
 	  return;
 	}
 	
 	// Format the email for sending.
 	email_filefield_format_mail($message, 
-	                            $email_filefield_file, 
+	                            $email_filefield_file,
+	                            $email_filefield_values, 
 	                            $email_filefield_webform);
 }
 
@@ -239,19 +244,21 @@ function theme_email_filefield_mail_subject($node, $file, $webform = NULL) {
 
 //------------------------------------------------------------------------------
 
-function theme_email_filefield_mail_message($node, $file, $webform = NULL) {
+function theme_email_filefield_mail_message($node, $file, $values, 
+                                            $webform = NULL) {
 
 	return "Content-Type: text/plain; charset=UTF-8; format=flowed;"."\n\n"
-    . theme('email_filefield_mail_message_text', $node, $file, $webform)
+    . theme('email_filefield_mail_message_text', $node, $file, $values,$webform)
     . "\n\n";
 }
 
 //------------------------------------------------------------------------------
 
-function theme_email_filefield_mail_message_text($node, $file, 
+function theme_email_filefield_mail_message_text($node, $file, $values, 
                                                  $webform = NULL) {
-	// TODO: Add some useful information here.
-  return 'Webform message text here!';
+                                                 	
+  _webform_client_form_submit_process($webform, $values['submitted']);
+	return theme('webform_mail_fields', 0, $values['submitted'], $webform);
 }
 
 //------------------------------------------------------------------------------
@@ -436,12 +443,16 @@ function email_filefield_webform_form($form_state, $webform, $file) {
  * Submit handler for the send email form.
  */
 function email_filefield_webform_form_submit($form, &$form_state) {
-	global $email_filefield_file, $email_filefield_webform;
+	global $email_filefield_file, $email_filefield_webform,
+	       $email_filefield_values;
+	       
+	module_load_include('inc', 'webform', 'webform_submissions');
   
 	// Set a temporary variables that reference variables needed for the email.
 	$email_filefield_file    = $form['#filefield'];
 	$email_filefield_webform = $form['#webform'];
-  
+	$email_filefield_values  = $form_state['values'];
+	
   // Call the regular webform submit.
   webform_client_form_submit($form, $form_state);
 }
@@ -450,7 +461,8 @@ function email_filefield_webform_form_submit($form, &$form_state) {
 // Mail functions
 //------------------------------------------------------------------------------
 
-function email_filefield_format_mail(&$message, $file, $webform = NULL) {
+function email_filefield_format_mail(&$message, $file, $values, 
+                                     $webform = NULL) {
 	
 	$node     = node_load($file['nid']);
 	$trenner  = md5(uniqid(time()));
@@ -464,7 +476,7 @@ function email_filefield_format_mail(&$message, $file, $webform = NULL) {
 	                            $node, $file, $webform);	
 	// Change message.
 	$message['body'] = "\n--$trenner\n"
-	 . theme('email_filefield_mail_message', $node, $file, $webform)
+	 . theme('email_filefield_mail_message', $node, $file, $values, $webform)
 	 . "\n\n";	
 	
 	// Attach file. ( not themeable!! )
@@ -499,6 +511,58 @@ function email_filefield_get_webform_options() {
   }
   
   return $options;
+}
+
+//------------------------------------------------------------------------------
+
+function email_filefield_get_submission($webform = NULL) {
+  static $submission;
+  
+  if ($webform && !$submission) {
+    global $user;
+    
+    // Get the last sid to the best of our ability.
+    // These three conditions should be unique.
+    $sid = db_result(db_query('SELECT ws.sid FROM {webform_submissions} ws'
+                        . ' WHERE ws.nid = %d'
+                        . ' AND ws.uid = %d'
+                        . ' AND ws.remote_addr = "%s"'
+                        . ' ORDER BY ws.sid DESC LIMIT 1',
+                        $webform->nid, $user->uid, ip_address()));
+                        
+    $submission = webform_get_submission($webform->nid, $sid);    
+  }
+  
+  return $submission; 
+}
+
+//------------------------------------------------------------------------------
+
+function email_filefield_is_file_mail($email, $webform = NULL) {
+	static $sent;
+  
+  if ($webform) {
+    $submission = email_filefield_get_submission($webform);
+    
+    // If we have already sent a file to this recipient, dont do it again.
+    if ($sent[$email]) {
+      return FALSE;
+    }    
+    
+    // Only send file to those listed in submission.
+    // All others get the stock webform submission emailing.
+    foreach ($webform->webform['additional_emails'] as $cid) {
+      foreach ($submission->data[$cid]['value'] as $recipient) {
+        
+      	if ($recipient == $email) {
+        	$sent[$email] = TRUE;
+          return TRUE;
+        }
+      }
+    }
+  }
+  
+  return FALSE;
 }
 
 //------------------------------------------------------------------------------
