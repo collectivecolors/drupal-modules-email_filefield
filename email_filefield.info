@@ -1,4 +1,4 @@
-; $Id$
+; $Id: email_filefield.info,v 1.2 2009/10/22 04:44:11 awebb Exp $
 name = FileField Email Formatter
 description = Adds a formatter option for filefields that allows for emailing of files attached to content.
 dependencies[] = filefield
@@ -7,3 +7,9 @@ dependencies[] = thickbox
 package = CCK
 core = 6.x
 php = 5.0
+; Information added by drupal.org packaging script on 2009-10-23
+version = "6.x-1.0-beta1"
+core = "6.x"
+project = "email_filefield"
+datestamp = "1256312431"
+

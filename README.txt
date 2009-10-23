@@ -1,4 +1,4 @@
-// $Id$
+// $Id: README.txt,v 1.3 2009/10/23 15:22:22 awebb Exp $
 
 ********************************************************************************
 ********************************************************************************
@@ -15,6 +15,17 @@
  
  Defines a CCK file field formatter that allows for the 
  emailing of files attached to content.
+ 
+ 
+ There has been a focus on making this module as themable as possible.
+ 
+ You are currently able to theme:
+ 
+ 1. The formatter output.
+ 2. The email that is generated with the file attachment.
+ 
+  
+ See the TODO.txt for known remaining tasks.  If you have ideas, let us know.
 
 --------------------------------------------------------------------------------
 
@@ -22,12 +33,17 @@
  
  1. Git [ http://git-scm.org ] - Source management
  2. GitHub [ http://github.com ] - Main project space
- 3. CVS [ http://cvs.drupal.org ] - Shortly as a Drupal project
+ 3. CVS [ http://cvs.drupal.org ] - Drupal CVS project
+ 
+ 
+ sponsored by:
+ 
+   * TheDavisLabs - cjdavis [ http://drupal.org/user/290217 ]
  
  
  developed by: 
  
-   1. CollectiveColors - http://collectivecolors.com
+   * CollectiveColors - http://collectivecolors.com
    
    ------------------------
    
@@ -37,8 +53,10 @@
      breakdown by maintainer.
  
  
- project home: 
+ project homes: 
 
+   http://drupal.org/project/email_filefield
+   
    http://github.com/collectivecolors/drupal-modules-email_filefield
 
 
@@ -62,6 +80,41 @@
    * thickbox   -  http://drupal.org/project/thickbox
    
    * webform    -  http://drupal.org/project/webform
+
+
+--------------------------------------------------------------------------------
+ TO INSTALL VIA DRUPAL
+--------------------------------------------------------------------------------
+
+ We highly recommend using drush if possible.  This will drastically speed up 
+ downloading and updating your Drupal packages.
+ 
+   See http://drupal.org/project/drush
+   
+   
+ WITH DRUSH
+ 
+   From your root Drupal site directory, run:
+   
+   
+   COMMAND_PROMPT$ drush dl email_filefield
+   
+   
+   The to update, all you have to do is:
+   
+   
+   COMMAND_PROMPT$ drush update
+   
+   
+   This will update any contributed projects that have new releases.  This is
+   much better than downloading the packages yourself.  Oh, drush is extensible
+   as well, so you can write your own drush modules.
+   
+   
+ WITHOUT DRUSH
+ 
+   Go download the recommended package from the drupal project page.  Untar in
+   your sites/all/modules folder or wherever you are putting your modules.   
    
 --------------------------------------------------------------------------------
  TO INSTALL VIA GIT
@@ -165,10 +218,9 @@
    theme functions that allow you to craft the display to your liking.  The same
    is true of the email that is generated.
 
-6. Let us know if you have problems.  Until we get this posted on Drupal, we
-   will be using the issue queue at:
+6. Let us know if you have problems.  Use the issue queue at:
 
-  http://github.com/collectivecolors/drupal-modules-email_filefield/issues
+  http://drupal.org/project/issues/email_filefield
   
   * Please post any issues you have with this module there.
 
