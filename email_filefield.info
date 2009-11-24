@@ -1,4 +1,4 @@
-; $Id: email_filefield.info,v 1.2 2009/10/22 04:44:11 awebb Exp $
+; $Id: email_filefield.info,v 1.2.2.1 2009/11/24 21:30:02 awebb Exp $
 name = FileField Email Formatter
 description = Adds a formatter option for filefields that allows for emailing of files attached to content.
 dependencies[] = filefield
